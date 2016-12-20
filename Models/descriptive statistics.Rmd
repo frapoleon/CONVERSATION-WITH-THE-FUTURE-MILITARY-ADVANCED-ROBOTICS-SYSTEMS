@@ -1,0 +1,171 @@
+---
+title: "Turning_Points"
+author: "Yusen Wang"
+date: "June 26, 2016"
+output: word_document
+---
+
+```{r setup, echo=FALSE, warning = FALSE, message=FALSE}
+setwd("~/Desktop/Frapoleon/Intern & Job/Crime Commission")
+library(xlsx)
+library(ggplot2)
+library(Rmisc)
+library(dplyr)
+```
+
+```{r clean, echo=FALSE, warning = FALSE, message=FALSE}
+data <- read.xlsx("Turning Points_0628.xls", sheetIndex = 1, startRow = 2, endRow = 108)
+
+data_clean <- data[,colSums(is.na(data))<nrow(data)]
+col <- colnames(data_clean)[c(1:5,7,9:11,13:15,17,19,24,25)]
+data_clean <- data_clean[, col]
+colnames(data_clean) <- c("Year", "Population", "Turning.Points", "Unemployment.Rate", "Military.Spending", "Protection.Spending", "CPI", "GDP", "Deficit", "Oil.Production", "Oil.Price", "Income.Taxes", "Remaining.Direct.Revenue", "Business.and.Other.Revenue", "num.of.Trademarks", "Technology.Existed")
+
+data_clean$Is.Turning.Point <- ifelse(is.na(data_clean$Turning.Points), "No", "Yes")
+data_clean$Is.Technology.Existed <- ifelse(is.na(data_clean$Technology.Existed), "No", "Yes")
+
+```
+
+```{r analysis 1, echo=FALSE, warning = FALSE, message=FALSE}
+for (j in c(2,4:15)) {
+        data_clean[, j] <- (data_clean[, j] - mean(data_clean[, j]))/sd(data_clean[, j])
+}
+
+t1 <- ggplot(data = data_clean, aes(x=Year, y=Oil.Production)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Turning.Point, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Did a Turning Point Occur in This Year?")) +
+        geom_path() + 
+        ggtitle("Relationship between Turning Points and Oil Production") + 
+        theme(legend.position = "bottom")
+
+t2 <- ggplot(data = data_clean, aes(x=Year, y=Oil.Production)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Technology.Existed, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Did a New Technology Occur in This Year?")) + 
+        geom_path() + 
+        ggtitle("Relationship between Technology and Oil Production") + 
+        theme(legend.position = "bottom")
+
+t3 <- ggplot(data = data_clean, aes(x=Year, y=Oil.Price)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Turning.Point, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Did a Turning Point Occur in This Year?")) +
+        geom_path() + 
+        ggtitle("Relationship between Turning Points and Oil Price") + 
+        theme(legend.position = "bottom")
+
+t4 <- ggplot(data = data_clean, aes(x=Year, y=Oil.Price)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Technology.Existed, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Did a New Technology Occur in This Year?")) + 
+        geom_path() + 
+        ggtitle("Relationship between Technology and Oil Price") + 
+        theme(legend.position = "bottom")
+
+
+multiplot(t1,t2,t3,t4,layout = matrix(c(1,2,3,4), nrow=2, byrow=F))
+        
+        
+        
+        ggplot(data = data_clean, aes(x=Year, y=Military.Spending)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Turning.Point, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Did a Turning Point Occur in This Year?")) + 
+        geom_path() + 
+        ggtitle("Relationship between Turning Points and Military Spending") + 
+        theme(plot.title = element_text(size = 8))
+
+ggplot(data = data_clean, aes(x=Year, y=Deficit)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Turning.Point, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Did a Turning Point Occur in This Year?")) + 
+        geom_path() + 
+        ggtitle("Relationship between Turning Ponist and Federal Deficit") + 
+        theme(plot.title = element_text(size = 8))
+
+ggplot(data = data_clean, aes(x=Year, y=Oil.Production)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Turning.Point, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Did a Turning Point Occur in This Year?")) + 
+        geom_path() + 
+        ggtitle("Relationship between Turning Ponist and Oil Production") + 
+        theme(plot.title = element_text(size = 8))
+
+ggplot(data = data_clean, aes(x=Year, y=Oil.Price)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Turning.Point, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Did a Turning Point Occur in This Year?")) + 
+        geom_path() + 
+        ggtitle("Relationship between Turning Ponist and Oil Price") + 
+        theme(plot.title = element_text(size = 8))
+
+ggplot(data = data_clean, aes(x=Year, y=Income.Taxes)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Turning.Point, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Did a Turning Point Occur in This Year?")) + 
+        geom_path() + 
+        ggtitle("Relationship between Turning Ponist and Income Taxes") + 
+        theme(plot.title = element_text(size = 8))
+```
+
+From the above figures, the occurrence of turning points tends to happen at peaks or valleys of the historical distributions of some key factors.
+
+```{r analysis 2, echo=FALSE, warning = FALSE, message=FALSE}
+
+
+ggplot(data = data_clean, aes(x=Year, y=Military.Spending)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Technology.Existed, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Is Technology Existed?")) + 
+        geom_path() + 
+        ggtitle("Relationship between Turning Ponist and Military Spending") + 
+        theme(plot.title = element_text(size = 8))
+
+ggplot(data = data_clean, aes(x=Year, y=Deficit)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Technology.Existed, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Is Technology Existed?")) + 
+        geom_path() + 
+        ggtitle("Relationship between Turning Ponist and Federal Deficit") + 
+        theme(plot.title = element_text(size = 8))
+
+ggplot(data = data_clean, aes(x=Year, y=Oil.Production)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Technology.Existed, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Is Technology Existed?")) + 
+        geom_path() + 
+        ggtitle("Relationship between Turning Ponist and Oil Production") + 
+        theme(plot.title = element_text(size = 8))
+
+ggplot(data = data_clean, aes(x=Year, y=Oil.Price)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Technology.Existed, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Is Technology Existed?")) + 
+        geom_path() + 
+        ggtitle("Relationship between Turning Ponist and Oil Price") + 
+        theme(plot.title = element_text(size = 8))
+
+ggplot(data = data_clean, aes(x=Year, y=Income.Taxes)) + 
+        geom_point(size=2.5,aes(colour = factor(Is.Technology.Existed, levels=c("Yes","No")))) + 
+        guides(color=guide_legend(title="Is Technology Existed?")) + 
+        geom_path() + 
+        ggtitle("Relationship between Turning Ponist and Income Taxes") + 
+        theme(plot.title = element_text(size = 8))
+```
+
+
+```{r machine learning, , echo=FALSE, warning = FALSE, message=FALSE}
+data_clean$Is.Turning.Point <- ifelse(is.na(data_clean$Turning.Points), 0, 1)
+data_clean$Is.Technology.Existed <- ifelse(is.na(data_clean$Technology.Existed), 0, 1)
+
+data_ml <- data_clean[, c(1,4,5,8:11,17,18)]
+
+#write.csv(data_ml[,c("Deficit", "Oil.Price", "Income.Taxes", "Is.Turning.Point")], file = "indicators.csv", row.names = F)
+
+write.csv(data_ml[,2:15], file = "indicators1.csv", row.names = F)
+write.csv(data_ml[,c(2:14,16)], file = "indicators2.csv", row.names = F)
+
+data_ml_diff <- as.data.frame(matrix(data = NA, nrow = 105, ncol = 9))
+colnames(data_ml_diff) <- colnames(data_ml)
+
+data_ml_diff$Year <- c(1911:2015)
+data_ml_diff$Is.Turning.Point <- data_ml$Is.Turning.Point[c(2:nrow(data_ml))]
+data_ml_diff$Is.Technology.Existed <- data_ml$Is.Technology.Existed[c(2:nrow(data_ml))]
+
+for (j in c(2:7)) {
+        data_ml_diff[,j] <- diff(data_ml[,j])
+}
+
+write.csv(data_ml_diff[,c(2:5,7:8)], file = "indicators_new1.csv", row.names = F)
+write.csv(data_ml_diff[,c(2:7,9)], file = "indicators_new2.csv", row.names = F)
+```
+
+We use data from 1910 to 2015. In the machine learning process, the first 80% data is used as train set, the other 20% data is used as test set. 

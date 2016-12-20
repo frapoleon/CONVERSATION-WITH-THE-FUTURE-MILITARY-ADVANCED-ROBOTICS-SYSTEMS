@@ -1,0 +1,184 @@
+---
+title: "regression"
+author: "Yusen Wang"
+date: "10/9/2016"
+output: html_document
+---
+
+```{r}
+require(dplyr)
+setwd("~/Desktop/Frapoleon/Intern & Job/Crime Commission/Paper")
+data <- read.csv("Turning Points_0629.csv", nrows=106)
+
+for (i in 1:ncol(data)) {
+        if (is.factor(data[,i])==T) {
+                print(i)
+                data[,i] = as.character(data[,i])
+        }
+}
+
+str(data)
+```
+
+```{r}
+for (i in 1:nrow(data)) {
+        if (is.na(data$Technology.List.any.substantial.tech.machine.that.existed.[i])==T) {
+                data$y[i] = 0
+        }
+        else {
+                data$y[i] = 1
+        }
+}
+colnames(data) <- c("YEARS","POPULATION","TURNING.POINT","UNEMPLOYMENT","MILITARY.SPENDING","PROTECTION.SPENDING","CPI","GDP","DEFICIT","OIL.PRODUCTION","OIL.PRICE","Income.Taxes","Remaining.Direct.Revenue","Business.and.Other.Revenue","Trademarks","Technology","y")
+x <- dplyr::select(data,UNEMPLOYMENT,MILITARY.SPENDING,GDP,DEFICIT,OIL.PRODUCTION,OIL.PRICE)
+y <- data$y
+```
+
+```{r}
+require(RSNNS)
+require(MASS)
+library(matrixStats)
+str(data)
+
+x.new <- scale(x,center = T, scale = T)
+x.new <- as.data.frame(cbind(x.new,y))
+
+logit <- glm(y ~ UNEMPLOYMENT + 
+                     MILITARY.SPENDING + 
+                     GDP + 
+                     DEFICIT + 
+                     OIL.PRODUCTION + 
+                     OIL.PRICE,
+             data = x.new, family = binomial(link = "logit"))
+
+
+logit <- glm(y ~ UNEMPLOYMENT + 
+                     MILITARY.SPENDING + 
+                     DEFICIT + 
+                     OIL.PRICE,
+             data = x.new, family = binomial(link = "logit"))
+
+
+y_hat_logit <- fitted(logit) # these are probabilities
+summary(y_hat_logit)
+
+z_logit <- as.integer(y_hat_logit > 0.5) # these are classifications
+table(data$y, z_logit)
+
+logit$coefficients
+
+library(bartMachine)
+set_bart_machine_num_cores(parallel::detectCores())
+bart <- bartMachine(X = x.new[,1:6], y = x.new$y,num_trees = 500)
+bart
+predictions <- predict(bart, new_data = x.new[,1:6], type = "class")
+bayes <- as.integer(predictions > 0.5)
+
+table(x.new$y, bayes)
+
+
+
+
+```
+
+```{r}
+prob=predict(logit,type=c("response"))
+mydata$prob=prob
+library(Deducer)
+rocplot(logit)
+a.title("a")
+
+```
+
+```{r}
+library(forecast)
+ts_data <- dplyr::select(data, UNEMPLOYMENT,MILITARY.SPENDING,GDP,DEFICIT,OIL.PRODUCTION,OIL.PRICE)
+ts_data2 <- ts(ts_data,start=1910,end=2015)
+
+t <- 35
+result <- data.frame(Year=c(2016:(2015+t)))
+for (i in 1:1000) {
+        print(i)
+        #set.seed(i)
+        fit <- auto.arima(ts_data2[,1])
+        UNEMPLOYMENT.sim <- simulate(fit,nsim = t)
+        
+        fit <- auto.arima(ts_data2[,2])
+        MILITARY.SPENDING.sim <- simulate(fit,nsim = t)
+        
+        fit <- auto.arima(ts_data2[,3])
+        GDP.sim <- simulate(fit,nsim = t)
+        
+        fit <- auto.arima(ts_data2[,4])
+        DEFICIT.sim <- simulate(fit, nsim = t)
+        
+        fit <- auto.arima(ts_data2[,5])
+        OIL.PRODUCTION.sim <- simulate(fit,nsim = t)
+        
+        fit <- auto.arima(ts_data2[,6])
+        OIL.PRICE.sim <- simulate(fit, nsim = t)
+        
+        new_data <- cbind(UNEMPLOYMENT.sim, MILITARY.SPENDING.sim,GDP.sim, DEFICIT.sim, OIL.PRODUCTION.sim,OIL.PRICE.sim)
+        new_data <- data.frame(new_data)
+        colnames(new_data) <- c("UNEMPLOYMENT","MILITARY.SPENDING","GDP","DEFICIT","OIL.PRODUCTION","OIL.PRICE")
+        new_data <- data.frame(scale(new_data,center = T, scale = T))
+        predictions <- predict(logit, new_data, type="response")
+        result <- cbind(result, predictions)
+}
+
+final <- data.frame(final=2016:2050, row.names = 2016:2050)
+for (i in 1:35) {
+        s <- sum(result[i,2:1001])/1000
+        print(s)
+        final[i,1] <- s
+}
+
+write.csv(final,"a.csv")
+```
+
+
+
+
+
+```{r}
+require(glmpath)
+X <- model.matrix(logit)
+path1 <- glmpath(X, y, nopenalty.subset = 1, 
+                 family = binomial(link = "logit"))
+summary(path1)
+y_hat_path1 <- predict(path1, newx = X, type = "response", 
+                       s = 1) # for the 6th step on the path
+z_path1 <- as.integer(y_hat_path1 > 0.5)
+table(y, z_path1)
+
+
+```
+
+
+```{r}
+irisDecTargets <- decodeClassLabels(y)
+iris <- splitForTrainingAndTest(x, irisDecTargets, ratio = 0.15)
+iris <- normTrainingAndTestSet(iris)
+
+model <- mlp(iris$inputsTrain, iris$targetsTrain, size = 5, 
+    learnFuncParams = c(0.1), maxit = 60, inputsTest = iris$inputsTest, 
+    targetsTest = iris$targetsTest)
+predictions <- predict(model, iris$inputsTest)
+
+
+plotIterativeError(model)
+plotRegressionError(predictions[,2], iris$targetsTest[,2], pch = 3)
+plotROC(fitted.values(model)[,2], iris$targetsTrain[,2])
+plotROC(predictions[,2], iris$targetsTest[,2])
+
+confusionMatrix(iris$targetsTrain, fitted.values(model))
+
+
+```
+
+
+
+
+
+
+
